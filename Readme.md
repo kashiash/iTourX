@@ -508,3 +508,96 @@ DestinationListingView(sort: sortOrder, searchString: searchText)
 ```
 
 Teraz mamy dynamiczne filtrowanie!
+
+
+
+
+
+## Relacje
+
+
+
+Do tej pory mieliśmy prosty model danych zawierający kolekcję miejsc docelowych. Aby ukończyć aplikację, zaktualizujemy go, tak aby każde miejsce docelowe miało listę miejsc, które użytkownicy chcą tam odwiedzić, na przykład, gdy odwiedzają Rzym, chcą zobaczyć Koloseum, Forum Rzymskie, Watykan, itp.
+
+W `SwiftData` nazywa się to relacją: każde miejsce docelowe ma wiele miejsc do odwiedzenia. Zamiast próbować wcisnąć wszystkie miejsca do jednego obiektu miejsca docelowego, możemy stworzyć osobny model Sight, a następnie powiedzieć `SwiftData`, że nasz pierwotny model `Destination` ma tablicę miejsc - `SwiftData` zajmie się połączeniem ich dla nas.
+
+Aby zacząć, utwórz nowy plik Swift o nazwie Sight.swift, dodaj import dla `SwiftData`, a następnie dodaj do niego ten kod:
+
+```swift
+@Model
+class Sight {
+    var name: String
+
+    init(name: String) {
+        self.name = name
+    }
+}
+```
+
+Przechowuje tylko pojedynczy kawałek danych, którym jest nazwa miejsca - później możesz dodać do niego więcej, na przykład śledząc, czy użytkownik już je odwiedził.
+
+Teraz możemy wrócić do modelu `Destination` i dodać tam nową właściwość:
+
+```swift
+var sights = [Sight]()
+```
+
+Dodanie tej właściwości wystarczy, aby powiedzieć SwiftData, że każde miejsce docelowe ma wiele miejsc z nim powiązanych. Nasz pierwotny model nie miał tej relacji, ale to nic złego: przy następnym uruchomieniu aplikacji SwiftData automatycznie zaktualizuje swoją bazę danych, aby uwzględnić tę zmianę, nie wymagając dodatkowej pracy z naszej strony. Nazywa się to migracją i pozwala na stopniową aktualizację i dostosowywanie naszych modeli w czasie.
+
+Oczywiście musimy dodać sposób, aby użytkownicy mogli wymieniać miejsca do odwiedzenia dla każdego miejsca docelowego, a najprostszym podejściem jest pokazanie osobnej sekcji w naszym widoku z polem tekstowym na nowe nazwy miejsc.
+
+Po pierwsze, dodaj tę nową właściwość do `EditDestinationView`:
+
+```swift
+@State private var newSightName = ""
+```
+
+To śledzi to, co użytkownik wpisuje jako nową nazwę miejsca.
+
+Po drugie, dodaj nową metodę, która przekształca newSightName w rzeczywisty obiekt Sight, a następnie dodaje go do naszej istniejącej listy miejsc naszego miejsca docelowego:
+
+```swift
+func addSight() {
+    guard newSightName.isEmpty == false else { return }
+
+    withAnimation {
+        let sight = Sight(name: newSightName)
+        destination.sights.append(sight)
+        newSightName = ""
+    }
+}
+```
+
+I teraz możemy dodać nową sekcję do formularza, przechodząc przez wszystkie istniejące miejsca i dodając miejsce na nowe miejsca poniżej:
+
+```swift
+Section("Sights") {
+    ForEach(destination.sights) { sight in
+        Text(sight.name)
+    }
+
+    HStack {
+        TextField("Add a new sight in \(destination.name)", text: $newSightName)
+
+        Button("Add", action: addSight)
+    }
+}
+```
+
+Zauważ, jak możemy uzyskać dostęp do destination.sights bezpośrednio? Relacje są ładowane leniwie przez `SwiftData`, co oznacza, że będzie ładować miejsca dla miejsca docelowego tylko wtedy, gdy są one faktycznie używane. Oznacza to, że `DestinationListingView` ładowane są tylko te dane, które naprawdę są mu potrzebne, co pomaga zapewnić, że nasz kod pozostaje szybki i lekki w użyciu pamięci
+
+.
+
+Teraz, zanim zakończymy tę relację, chcę wprowadzić jedną małą zmianę. Otóż teraz mamy mały problem: jeśli użytkownik zdecyduje, że nie chce odwiedzać dodanego przez siebie miejsca, co powinno się stać z wszystkimi miejscami, które dodał do tego miejsca?
+
+`SwiftData` lubi grać na pewno, więc w tej sytuacji usunięcie miejsca docelowego pozostawi jego miejsca nietknięte, ale tylko ukryte przed widokiem. Czasami to jest dokładnie to, czego chcesz, ale tutaj doprowadzi to do bałaganu, ponieważ nie ma możliwości wyszukiwania miejsc, które nie są przypisane do miejsc docelowych.
+
+W tej sytuacji musimy podać `SwiftData` trochę dodatkowych wskazówek: powiemy mu, że gdy usuwamy miejsce docelowe, powinno także usuwać wszystkie miejsca, które do niego należą.
+
+Aby to zrobić, musimy dołączyć makro @Relationship do właściwości sights, tak jak to:
+
+```swift
+@Relationship(deleteRule: .cascade) var sights = [Sight]()
+```
+
+Reguła kasowania cascade oznacza "gdy usuwamy ten obiekt, usuń również wszystkie jego miejsca" - dokładnie to, czego chcemy.

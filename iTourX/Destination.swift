@@ -14,6 +14,9 @@ class Destination {
     var details: String
     var date: Date
     var priority: Int
+
+    @Relationship(deleteRule: .cascade) var sights = [Sight]()
+
     init(name: String = "", details: String = "", date: Date = Date(), priority: Int = 2) {
         self.name = name
         self.details = details
