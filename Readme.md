@@ -2,6 +2,10 @@
 
 
 
+Przygotowane na podstawie : https://www.hackingwithswift.com/quick-start/swiftdata/swiftdata-tutorial-building-a-complete-project
+
+
+
 Najlepszym sposobem na rozpoczęcie każdego nowego projektu jest zdefiniowanie modelu danych, ponieważ po poprawnej jego implementacji reszta aplikacji zazwyczaj płynie łatwo. W SwiftData wszystkie nasze modele są tworzone za pomocą kodu – możemy pożegnać się z interfejsem użytkownika do edycji modeli Core Data w Xcode, ponieważ teraz wszystko jest opisane w czystym Swift.
 
 W projekcie tym stworzymy prosty model, aby opisać jedno miejsce docelowe (Destination). Stwórz nowy plik Swift o nazwie Destination.swift i dodaj do niego ten kod:
@@ -428,3 +432,79 @@ DestinationListingView(sort: sortOrder)
 ```
 
 Cała ta praca przeniosła kolejność sortowania o jeden poziom wyżej z DestinationListingView, co oznacza, że możemy teraz kontrolować ją dynamicznie.
+
+## Filtrowanie wyników
+
+Filtrowanie w SwiftData odbywa się za pomocą predykatów: testu, który może być zastosowany, aby zdecydować, czy obiekty powinny pojawić się w rezultującej tablicy, czy nie. Robi się to za pomocą specjalnego makra #Predicate, które przyjmuje kod Swift, który piszemy, i przekształca go na filtry, które podstawowa baza danych może zrozumieć.
+
+Porada: Jeśli wcześniej korzystałeś z Core Data, #Predicate jest podobne do NSPredicate. Główna różnica polega na tym, że #Predicate jest sprawdzane pod kątem typów podczas kompilacji, ale nie ma odpowiednika NSCompoundPredicate w tym przypadku.
+
+Spróbujmy kilku przykładowych predykatów. Na przykład, możemy powiedzieć, że nasza aplikacja nie powinna pokazywać żadnych miejsc docelowych o niskim priorytecie:
+
+```swift
+init(sort: SortDescriptor<Destination>) {
+    _destinations = Query(filter: #Predicate {
+        $0.priority >= 2
+    }, sort: [sort])
+}
+```
+
+Jak widzisz, przekazujemy #Predicate zamknięcie, które bierze jeden obiekt z zapytania i stosuje do niego test. W tym przypadku obiekt ma priorytet co najmniej 2?
+
+Możemy także napisać predykat, który pokazuje tylko miejsca docelowe, które są nadchodzące w naszej podróży, ignorując te, które są starsze niż aktualna data. Nie możemy odczytać Date.now wewnątrz makra #Predicate, ale jeśli najpierw utworzymy lokalną kopię, to będzie działać dobrze. Nasz predykat wyglądałby więc tak:
+
+```swift
+init(sort: SortDescriptor<Destination>) {
+    let now = Date.now
+
+    _destinations = Query(filter: #Predicate {
+        $0.date > now
+    }, sort: [sort])
+}
+```
+
+To są oba interesujące przypadki, ale w tym projekcie będziemy używać predykatu, który pozwala użytkownikowi wyszukiwać konkretne miejsca docelowe, używając modyfikatora searchable() SwiftUI.
+
+Ponieważ to się zmieni podczas pracy aplikacji, określenie dynamicznego filtra jest takie samo jak dynamiczne określenie kolejności sortowania: musimy utworzyć stan w ContentView, a następnie przekazać go do inicjalizatora EditDestinationView.
+
+To wymaga czterech kroków, zaczynając od dodania nowego stanu w ContentView, aby przechowywać aktualny tekst wyszukiwania użytkownika:
+
+```swift
+@State private var searchText = ""
+```
+
+Następnie musimy powiązać to z modyfikatorem searchable(), więc dodaj to obok navigationTitle() w ContentView:
+
+```swift
+.searchable(text: $searchText)
+```
+
+Po trzecie, musimy zaktualizować inicjalizator DestinationListingView, aby akceptować ciąg wyszukiwania i używać go jako predykat zapytania:
+
+```swift
+init(sort: SortDescriptor<Destination>, searchString: String) {
+    _destinations = Query(filter: #Predicate {
+        if searchString.isEmpty {
+            return true
+        } else {
+            return $0.name.localizedStandardContains(searchString)
+        }
+    }, sort: [sort])
+}
+```
+
+Uwaga: localizedStandardContains() jest prawie zawsze najlepszym sposobem na przeprowadzanie wyszukiwań ciągów znaków widocznych dla użytkownika. Jeśli używasz metody contains() zwykłej, otrzymasz wyszukiwanie z uwzględnieniem wielkości liter.
+
+Upewnij się, że przesyłasz przykładowe wyszukiwanie do swojego podglądu, nawet jeśli to tylko pusty ciąg znaków:
+
+```swift
+DestinationListingView(sort: SortDescriptor(\Destination.name), searchString: "")
+```
+
+I wreszcie, musimy edytować sposób tworzenia DestinationListingView w ContentView, aby przekazać zarówno aktualny porządek sortowania, jak i ciąg wyszukiwania:
+
+```swift
+DestinationListingView(sort: sortOrder, searchString: searchText)
+```
+
+Teraz mamy dynamiczne filtrowanie!
