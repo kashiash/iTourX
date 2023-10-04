@@ -601,3 +601,21 @@ Aby to zrobić, musimy dołączyć makro @Relationship do właściwości sights,
 ```
 
 Reguła kasowania cascade oznacza "gdy usuwamy ten obiekt, usuń również wszystkie jego miejsca" - dokładnie to, czego chcemy.
+
+
+
+Ten wprowadzający projekt został zaprojektowany, aby nauczyć Cię absolutnych podstaw korzystania z SwiftData. Poznałeś modele, kontenery modeli, konteksty modeli, zapytania, deskryptory sortowania, predykaty, relacje i wiele więcej.
+
+Każde z tych zagadnień ma znacznie większą moc niż ta pokazana w małym samouczku, ale mam nadzieję, że docenisz, jak potężne jest SwiftData i jak łatwo zarządzać nawet skomplikowanymi danymi.
+
+Reszta tej książki jest poświęcona prezentowaniu znacznie większej mocy SwiftData, ale pamiętaj, że będzie ona nadal rosnąć i rozwijać się w przyszłości.
+
+Jeśli chcesz zobaczyć moją wersję ukończonego tego projektu, możesz ją znaleźć tutaj na GitHubie: https://github.com/twostraws/iTour.
+
+Wyzwania:
+Jednym z najlepszych sposobów nauki jest pisanie własnego kodu tak często, jak to możliwe, więc oto trzy sposoby, w jakie powinieneś przetestować swoją nową wiedzę, aby upewnić się, że w pełni rozumiesz, co się dzieje:
+
+1. Dodaj obsługę przeciągania (swipe) do usuwania miejsc wartych odwiedzenia.
+2. Użyj tablicy deskryptorów sortowania do zainicjowania widoku DestinationListingView, gdzie pierwsze sortowanie będzie wyborem użytkownika, a drugie sensowną alternatywą - na przykład datą przyjazdu, a następnie nazwą.
+3. Dodaj drugie menu wyboru w pasku narzędzi w widoku ContentView, pozwalające użytkownikowi przełączać się między wyświetlaniem wszystkich miejsc, a tylko tymi, które są przyszłe.
+
