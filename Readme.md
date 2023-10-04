@@ -314,3 +314,117 @@ Button("Add Destination", systemImage: "plus", action: addDestination)
 Gotowe! Wypróbuj to - dodaj kilka innych miejsc docelowych według własnego wyboru, a powinieneś zauważyć, że automatycznie pojawiają się one w naszej głównej liście.
 
 Wskazówka: Teraz możesz usunąć przycisk i metodę do dodawania danych próbkowych, ponieważ już ich nie potrzebujemy.
+
+
+
+## Sortowanie
+
+Najprostszym sposobem sortowania zapytań SwiftData jest przekazanie dodatkowych opcji do makra @Query.
+
+Na przykład, możemy chcieć przechowywać miejsca docelowe alfabetycznie według ich nazwy, więc używamy:
+
+```swift
+@Query(sort: \Destination.name)
+```
+
+Lub możemy sortować według priorytetu w kolejności malejącej w ten sposób:
+
+```swift
+@Query(sort: \Destination.priority, order: .reverse) var destinations: [Destination]
+```
+
+To obsługuje tylko jedną właściwość, ale jeśli potrzebujesz więcej niż jednej - jeśli chcesz sortować według priorytetu malejąco, a następnie według nazwy rosnąco, na przykład, musisz użyć tablicy SortDescriptor:
+
+```swift
+@Query(sort: [SortDescriptor(\Destination.priority, order: .reverse), SortDescriptor(\Destination.name)]) var destinations: [Destination]
+```
+
+W tej tablicy możesz mieć tyle sort descriptors, ile chcesz, a SwiftData będzie je przetwarzać jeden po drugim.
+
+To podejście działa świetnie, gdy znasz swoją kolejność sortowania podczas kompilacji, ale bardzo często chcesz, aby użytkownik mógł sortować swoje dane według własnych preferencji.
+
+To wymaga znacznie więcej pracy, ponieważ właściwości utworzone za pomocą @Query nie mają żadnej prostej właściwości `sortOrder`, której możemy użyć. Zamiast tego musisz przenieść swoją własność @Query o jeden poziom w hierarchii SwiftUI - musisz umieścić ją w podwidoku, gdzie można wstrzyknąć sortowanie za pomocą inicjalizatora widoku.
+
+Pierwszym krokiem jest utworzenie nowego widoku SwiftUI o nazwie DestinationListingView i dodanie mu linii importu SwiftData na początku.
+
+Następnie musimy przenieść pewien kod z ContentView do DestinationListingView:
+
+- Właściwość `destinations`.
+- Całą listę, ale nie jej modyfikatory.
+- Metodę `deleteDestinations()`.
+Powinieneś także skopiować właściwość środowiska dla modelContext do DestinationListingView - powinna być skopiowana, a nie przeniesiona, ponieważ potrzebujemy jej w obu miejscach.
+
+W końcu umieść DestinationListingView tam, gdzie była Lista w ContentView, tak jak poniżej:
+
+```swift
+NavigationStack(path: $path) {
+    DestinationListingView()
+        .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
+        .navigationTitle("iTour")
+        .toolbar {
+            Button("Add Destination", systemImage: "plus", action: addDestination)
+        }
+}
+```
+
+Wszystko, co zrobiliśmy, to trochę przesunąć kod, co oznacza, że aplikacja będzie wyglądać identycznie podczas uruchamiania. Jednakże, ponieważ DestinationListingView jest podwidokiem ContentView, teraz możemy przesyłać wartości do niego, aby kontrolować zapytanie SwiftData.
+
+To wymaga pięciu kroków:
+
+1. Utworzenie jakiegoś miejsca do przechowywania bieżącego sortowania użytkownika.
+2. Utworzenie interfejsu użytkownika do dostosowywania tego sortowania na podstawie ustawień użytkownika.
+3. Poinformowanie DestinationListingView, że musi być utworzone z pewnego rodzaju sortowania.
+4. Zaktualizowanie podglądu, aby przekazać przykładowe sortowanie.
+5. Przekazanie sortowania do DestinationListingView podczas tworzenia.
+
+Przejdziemy przez te kroki krok po kroku.
+
+Po pierwsze, dodaj tę właściwość do ContentView, która będzie zawierać bieżący porządek sortowania z sensowną wartością domyślną:
+
+```swift
+@State private var sortOrder = SortDescriptor(\Destination.name)
+```
+
+Po drugie, utworzymy przycisk menu w naszym pasku narzędziowym, który pozwoli użytkownikowi przełączać się między różnymi porządkami sortowania. Dodaj to do paska narzędzi w ContentView:
+
+```swift
+Menu("Sort", systemImage: "arrow.up.arrow.down") {
+    Picker("Sort", selection: $sortOrder) {
+        Text("Name")
+            .tag(SortDescriptor(\Destination.name))
+
+        Text("Priority")
+            .tag(SortDescriptor(\Destination.priority, order: .reverse))
+
+        Text("Date")
+            .tag(SortDescriptor(\Destination.date))
+    }
+    .pickerStyle(.inline)
+}
+```
+
+Po trzecie, musimy dodać inicjalizator do DestinationListingView, aby akceptować sortowanie miejsca docelowego, które zostanie użyte w jego zapytaniu. Ponieważ próbujemy zmienić samo zapytanie, a nie tablicę danych, które zostały zwrócone, musimy użyć nazwy właściwości z podkreśleniem, tak jak poniżej:
+
+```swift
+init(sort: SortDescriptor<Destination>) {
+    _destinations = Query(sort: [sort])
+}
+```
+
+Po czwarte, musimy zaktualizować kod podglądu, aby przekazać przykładową opcję sortowania:
+
+```swift
+#Preview {
+    DestinationListingView(sort: SortDescriptor(\Destination.name))
+}
+```
+
+I wreszcie, musimy dostosować ContentView, aby przekazywał wartość sortowania do DestinationListing
+
+View, tak jak poniżej:
+
+```swift
+DestinationListingView(sort: sortOrder)
+```
+
+Cała ta praca przeniosła kolejność sortowania o jeden poziom wyżej z DestinationListingView, co oznacza, że możemy teraz kontrolować ją dynamicznie.
