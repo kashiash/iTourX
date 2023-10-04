@@ -26,9 +26,13 @@ struct ContentView: View {
                     .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
                     .searchable(text: $searchText)
                     .toolbar {
-                        Button("Add Samples", action: addSamples)
+
                         Button("Add Destination", systemImage: "plus", action: addDestination)
+
                         Menu("Sort", systemImage: "arrow.up.arrow.down") {
+
+                            Button("Add Samples", action: addSamples)
+
                             Picker("Sort", selection: $sortOrder) {
                                 Text("Name")
                                     .tag(SortDescriptor(\Destination.name))
@@ -40,6 +44,7 @@ struct ContentView: View {
                                     .tag(SortDescriptor(\Destination.date))
                             }
                             .pickerStyle(.inline)
+
                         }
                     }
             }

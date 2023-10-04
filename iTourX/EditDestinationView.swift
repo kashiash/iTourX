@@ -9,9 +9,12 @@ import SwiftUI
 import SwiftData
 
 struct EditDestinationView: View {
-    @Environment(\.modelContext) var modelContext
+
     @Bindable var destination: Destination
     @State private var newSightName = ""
+
+  //  @Environment(\.modelContext) var modelContext
+
     var body: some View {
         Form {
             TextField("Name", text: $destination.name)
@@ -54,13 +57,13 @@ struct EditDestinationView: View {
     private func deleteSight(indexSet: IndexSet) {
             indexSet.forEach { index in
                 let sight = destination.sights[index]
-                modelContext.delete(sight)
+               // modelContext.delete(sight)
                 destination.sights.remove(at: index)
-                do {
-                    try modelContext.save()
-                } catch {
-                    print(error.localizedDescription)
-                }
+//                do {
+//                    try modelContext.save()
+//                } catch {
+//                    print(error.localizedDescription)
+//                }
             }
         }
 }
