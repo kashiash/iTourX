@@ -13,7 +13,6 @@ struct EditDestinationView: View {
     @Bindable var destination: Destination
     @State private var newSightName = ""
 
-  //  @Environment(\.modelContext) var modelContext
 
     var body: some View {
         Form {
@@ -57,13 +56,7 @@ struct EditDestinationView: View {
     private func deleteSight(indexSet: IndexSet) {
             indexSet.forEach { index in
                 let sight = destination.sights[index]
-               // modelContext.delete(sight)
                 destination.sights.remove(at: index)
-//                do {
-//                    try modelContext.save()
-//                } catch {
-//                    print(error.localizedDescription)
-//                }
             }
         }
 }

@@ -619,3 +619,30 @@ Jednym z najlepszych sposobów nauki jest pisanie własnego kodu tak często, ja
 2. Użyj tablicy deskryptorów sortowania do zainicjowania widoku DestinationListingView, gdzie pierwsze sortowanie będzie wyborem użytkownika, a drugie sensowną alternatywą - na przykład datą przyjazdu, a następnie nazwą.
 3. Dodaj drugie menu wyboru w pasku narzędzi w widoku ContentView, pozwalające użytkownikowi przełączać się między wyświetlaniem wszystkich miejsc, a tylko tymi, które są przyszłe.
 
+
+
+#### Usuwanie miejsc do odwiedzenia:
+
+nalezy dodać w `EditDestinationView` do petli foreach modyfikator on delete i wywolac w nim funkcje usuwającą
+
+Modyfikator:
+
+```swift
+Section("Sights") {
+  ForEach(destination.sights) { sight in
+                               Text(sight.name)
+                              }
+  .onDelete(perform: deleteSight)
+```
+
+kod funkcji:
+
+```swift
+private func deleteSight(indexSet: IndexSet) {
+  indexSet.forEach { index in
+                    let sight = destination.sights[index]
+                    destination.sights.remove(at: index)
+                   }
+}
+```
+
