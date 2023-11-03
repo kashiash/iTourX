@@ -621,9 +621,13 @@ Jednym z najlepszych sposobów nauki jest pisanie własnego kodu tak często, ja
 
 
 
-#### Usuwanie miejsc do odwiedzenia:
 
-nalezy dodać w `EditDestinationView` do petli foreach modyfikator on delete i wywolac w nim funkcje usuwającą
+
+## Wyzwanie 1: Dodaj przeciąganie do usunięcia miejsc
+
+Pierwszym wyzwaniem jest dodanie funkcji przeciągania do usunięcia miejsc, podobnie jak mamy to dla celów podróży. To wyzwanie wydaje się być łatwe, ale w praktyce nie jest – SwiftData ma bardzo precyzyjny pomysł na to, jak powinno to działać, i jeśli tego nie uszanujesz, napotkasz problemy.
+
+*nalezy dodać w `EditDestinationView` do pętli foreach modyfikator on delete i wywołać w nim funkcję usuwającą*
 
 Modyfikator:
 
@@ -646,3 +650,120 @@ private func deleteSight(indexSet: IndexSet) {
 }
 ```
 
+
+
+Spróbujmy teraz, abyś mógł zobaczyć, co mam na myśli.
+
+Otwórz plik EditDestinationView.swift i dodaj tę właściwość do struktury naszego widoku:
+
+```swift
+@Environment(\.modelContext) private var modelContext
+```
+
+Teraz dodaj podobną metodę do tej, którą użyliśmy do usuwania celów podróży:
+
+```swift
+func deleteSights(_ indexSet: IndexSet) {
+    for index in indexSet {
+        let sight = destination.sights[index]
+        modelContext.delete(sight)
+    }
+}
+```
+
+Teraz możemy przypiąć to do pętli `ForEach`, która służy do wyświetlania miejsc, tak jak poniżej:
+
+```swift
+ForEach(destination.sights) { sight in
+    Text(sight.name)
+}
+.onDelete(perform: deleteSights)
+```
+
+Uruchom teraz projekt i przetestuj to. Powinieneś znaleźć, że możesz swobodnie przeciągać, aby usunąć miejsca, a jeśli zamkniesz aplikację i ponownie ją uruchomisz, miejsca znikną.
+
+Jednakże, jest pewien problem: jeśli usuniesz miejsce, wrócisz do listy celów podróży, a następnie wybierzesz ten sam cel podróży ponownie, aplikacja ulegnie awarii.
+
+Kluczowy jest fakt, że nasze miejsca nie mają dwukierunkowego związku z ich celami podróży. Dlatego jeśli po prostu wywołamy `modelContext.delete(someSight)`, napotkamy problemy – lista miejsc celu podróży nie zostanie zaktualizowana, dopóki aplikacja nie zostanie ponownie uruchomiona, więc SwiftData będzie próbować uzyskać dostęp do pamięci, która została zniszczona.
+
+Aby być całkowicie pewnym, że obiekt zostaje poprawnie zniszczony, ważne jest wywołanie na nim `delete()`, a także usunięcie go z tablicy. Więc kod powinien wyglądać tak:
+
+```swift
+func deleteSights(_ indexSet: IndexSet) {
+    for index in indexSet {
+        let sight = destination.sights[index]
+        modelContext.delete(sight)
+    }
+
+    destination.sights.remove(atOffsets: indexSet)
+}
+```
+
+Będziemy się temu przyglądać bardziej szczegółowo w bonusowych wyzwaniach!
+
+## Wyzwanie 2: Użyj tablicy deskryptorów sortowania
+
+Drugim wyzwaniem jest dostosowanie sortowania tak, aby zawsze używało tablicy deskryptorów sortowania: tego, którego użytkownik wybrał, wraz z sensownym drugim domyślnym. Jeśli użytkownik wybierze sortowanie według daty przybycia, dodamy jako drugi deskryptor sortowania nazwę, aby rozstrzygać ewentualne remisy.
+
+To zadanie jest dość łatwe, ponieważ mamy już większość pracy wykonanej. Wymaga pięciu kroków, z których tylko ostatni wymaga pracy, która nie polega tylko na dodawaniu lub usuwaniu nawiasów kwadratowych:
+
+1. Zmodyfikuj inicjalizator DestinationListingView, aby akceptował tablicę deskryptorów sortowania.
+2. Przekaż tę tablicę do inicjalizatora Query.
+3. Zmień kod podglądu DestinationListingView, aby przekazać tablicę.
+4. Zmień właściwość sortOrder w ContentView, aby była to tablica deskryptorów sortowania.
+5. Dostosuj każdy z tagów w wyborze ContentView, aby dostarczać wybrane tablice sortowania.
+
+Przejdźmy teraz przez te kroki.
+
+Po pierwsze, zmień inicjalizator, aby akceptował tablicę, umieszczając nawiasy kwadratowe wokół istniejącego parametru SortDescriptor:
+
+```swift
+init(sort: [SortDescriptor<Destination>], searchString: String) {
+```
+
+Po drugie, zmień inicjalizator Query, aby przekazać tę tablicę bezpośrednio, usuwając nawiasy kwadratowe wokół sort:
+
+```swift
+}, sort: sort)
+```
+
+Po trzecie, zmień podgląd, aby przekazać tablicę zawierającą aktualną wartość, ponownie dodając nawiasy kwadratowe wokół aktualnej wartości SortDescriptor:
+
+```swift
+DestinationListingView(sort: [SortDescriptor(\Destination.name)], searchString: "")
+```
+
+Po czwarte, w ContentView, dodaj nawiasy kwadratowe wokół domyślnej wartości właściwości sortOrder, tworząc z niej tablicę:
+
+```swift
+@State private var sortOrder = [SortDescriptor(\Destination.name)]
+```
+
+Pozostaje tylko ostatnie zadanie, które polega na zdecydowaniu, jakie deskryptory sortowania powinny być przekazywane. To zależy od ciebie, ale dostarczę kilka sugestii:
+
+```swift
+Picker("Sortuj", selection: $sortOrder) {
+    Text("Nazwa")
+        .tag([
+            SortDescriptor(\Destination.name),
+            SortDescriptor(\Destination.date),
+        ])
+
+    Text("Priorytet")
+        .tag([
+            SortDescriptor(\Destination.priority, order: .reverse),
+            SortDescriptor(\Destination.name),
+        ])
+
+    Text("Data")
+        .tag([
+            SortDescriptor(\Destination.date),
+            SortDescriptor(\Destination.name),
+        ])
+}
+.pickerStyle(.inline)
+```
+
+To jest niewielka zmiana, ale pomaga uczynić naszą aplikację trochę bardziej przewidywalną – gdy ktoś sortuje według priorytetu, prawdopodobnie będzie miał kilka celów podróży w jednej grupie, więc dodatkowy deskryptor sortowania po nazwie pomaga utrzymać porządek.
+
+**Ważne: Teraz, gdy utworzyliśmy tablice dla tych różnych elementów wyboru, powinieneś skopiować tablicę przypisaną do tagu "Nazwa" do domyślnej wartości sortOrder, aby poprawny element był zaznaczony na początku.**

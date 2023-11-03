@@ -11,7 +11,8 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) var modelContext
 
-    @State private var sortOrder = SortDescriptor(\Destination.name)
+    @State private var sortOrder = [SortDescriptor(\Destination.name),
+                                    SortDescriptor(\Destination.date)]
     @State private var path = [Destination]()
     @State private var searchText = ""
 
@@ -35,13 +36,22 @@ struct ContentView: View {
 
                             Picker("Sort", selection: $sortOrder) {
                                 Text("Name")
-                                    .tag(SortDescriptor(\Destination.name))
+                                    .tag([
+                                        SortDescriptor(\Destination.name),
+                                        SortDescriptor(\Destination.date)
+                                         ])
 
                                 Text("Priority")
-                                    .tag(SortDescriptor(\Destination.priority, order: .reverse))
+                                    .tag([
+                                        SortDescriptor(\Destination.priority, order: .reverse),
+                                          SortDescriptor(\Destination.name)
+                                         ])
 
                                 Text("Date")
-                                    .tag(SortDescriptor(\Destination.date))
+                                    .tag([
+                                        SortDescriptor(\Destination.date),
+                                        SortDescriptor(\Destination.name)
+                                    ])
                             }
                             .pickerStyle(.inline)
 
