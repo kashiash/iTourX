@@ -34,7 +34,10 @@ struct DestinationListingView: View {
             if searchString.isEmpty {
                 return $0.date > minimumDate
             } else {
-                return $0.name.localizedStandardContains(searchString) && $0.date > minimumDate
+                return ($0.name.localizedStandardContains(searchString)
+                || $0.sights.contains
+                     { $0.name.localizedStandardContains(searchString) })
+                && $0.date > minimumDate
             }
         }, sort: sort)
     }

@@ -30,6 +30,7 @@ struct ContentView: View
             {
                 DestinationListingView(sort: sortOrder, searchString: searchText,minimumDate: minimumdate)
                     .navigationTitle("iTour")
+                    .navigationBarTitleDisplayMode(.inline)
                     .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
                     .searchable(text: $searchText)
                     .toolbar {
