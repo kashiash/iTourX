@@ -12,7 +12,13 @@ import SwiftData
 struct iTourXApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TabView
+            {
+                ContentView()
+                    .tabItem { Label("Destiantions",systemImage: "map")}
+                SightsView()
+                    .tabItem { Label("Sights",systemImage: "mappin.and.ellipse") }
+            }
         }
         .modelContainer(for: [Destination.self,Sight.self, ])
     }

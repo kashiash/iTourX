@@ -14,6 +14,12 @@ struct EditDestinationView: View {
     @State private var newSightName = ""
     @Environment(\.modelContext) private var modelContext
 
+    var sortedSights: [Sight] {
+        destination.sights.sorted {
+            $0.name < $1.name
+        }
+    }
+
     var body: some View {
         Form {
             TextField("Name", text: $destination.name)
@@ -29,7 +35,7 @@ struct EditDestinationView: View {
                 .pickerStyle(.segmented)
             }
             Section("Sights") {
-                ForEach(destination.sights) { sight in
+                ForEach(sortedSights) { sight in
                     Text(sight.name)
                 }
                 .onDelete(perform: deleteSights)
@@ -55,11 +61,12 @@ struct EditDestinationView: View {
     }
     func deleteSights(_ indexSet: IndexSet) {
         for index in indexSet {
-            let sight = destination.sights[index]
+            let sight = sortedSights[index]
             modelContext.delete(sight)
         }
+        // not necessary when exist inverted relation to Destination
+        //destination.sights.remove(atOffsets: indexSet)
 
-        destination.sights.remove(atOffsets: indexSet)
     }
 }
 

@@ -8,21 +8,27 @@
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
+struct ContentView: View 
+{
     @Environment(\.modelContext) var modelContext
-
     @State private var sortOrder = [SortDescriptor(\Destination.name),
                                     SortDescriptor(\Destination.date)]
     @State private var path = [Destination]()
     @State private var searchText = ""
+    @State private var minimumdate = Date.distantPast
 
-    var body: some View {
-        VStack {
+    let currentDate = Date.now
+
+    var body: some View 
+    {
+        VStack 
+        {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
-            NavigationStack(path: $path) {
-                DestinationListingView(sort: sortOrder, searchString: searchText)
+            NavigationStack(path: $path)
+            {
+                DestinationListingView(sort: sortOrder, searchString: searchText,minimumDate: minimumdate)
                     .navigationTitle("iTour")
                     .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
                     .searchable(text: $searchText)
@@ -30,28 +36,36 @@ struct ContentView: View {
 
                         Button("Add Destination", systemImage: "plus", action: addDestination)
 
-                        Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                        Menu("Sort", systemImage: "arrow.up.arrow.down")
+                        {
 
                             Button("Add Samples", action: addSamples)
 
-                            Picker("Sort", selection: $sortOrder) {
+                            Picker("Sort", selection: $sortOrder)
+                            {
                                 Text("Name")
                                     .tag([
                                         SortDescriptor(\Destination.name),
                                         SortDescriptor(\Destination.date)
-                                         ])
+                                    ])
 
                                 Text("Priority")
                                     .tag([
                                         SortDescriptor(\Destination.priority, order: .reverse),
-                                          SortDescriptor(\Destination.name)
-                                         ])
+                                        SortDescriptor(\Destination.name)
+                                    ])
 
                                 Text("Date")
                                     .tag([
                                         SortDescriptor(\Destination.date),
                                         SortDescriptor(\Destination.name)
                                     ])
+                            }
+                            .pickerStyle(.inline)
+                            Picker("Filter",systemImage: "line.3.horizontal.decrease.circle",selection: $minimumdate)
+                            {
+                                Text("Show all destinations").tag(Date.distantPast)
+                                Text("Show upcoming destinations").tag(currentDate)
                             }
                             .pickerStyle(.inline)
 
@@ -61,7 +75,8 @@ struct ContentView: View {
         }
         .padding()
     }
-    func addSamples() {
+    func addSamples() 
+    {
         let rome = Destination(name: "Rome")
         let florence = Destination(name: "Florence")
         let naples = Destination(name: "Naples")
@@ -72,7 +87,8 @@ struct ContentView: View {
     }
 
 
-    func addDestination() {
+    func addDestination() 
+    {
         let destination = Destination()
         modelContext.insert(destination)
         path = [destination]

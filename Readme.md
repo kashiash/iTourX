@@ -767,3 +767,275 @@ Picker("Sortuj", selection: $sortOrder) {
 To jest niewielka zmiana, ale pomaga uczynić naszą aplikację trochę bardziej przewidywalną – gdy ktoś sortuje według priorytetu, prawdopodobnie będzie miał kilka celów podróży w jednej grupie, więc dodatkowy deskryptor sortowania po nazwie pomaga utrzymać porządek.
 
 **Ważne: Teraz, gdy utworzyliśmy tablice dla tych różnych elementów wyboru, powinieneś skopiować tablicę przypisaną do tagu "Nazwa" do domyślnej wartości sortOrder, aby poprawny element był zaznaczony na początku.**
+
+
+
+### Wyzwanie 3: Dodaj drugi wybór w menu paska narzędziowego
+
+Trzecim wyzwaniem jest umożliwienie użytkownikom filtrowania ich celów podróży, aby mogli pokazać wszystkie cele podróży lub tylko te, które jeszcze przyszły. Istnieje wiele sposobów na rozwiązanie tego zadania, ale pokażę ci najłatwiejszy sposób!
+
+Po pierwsze, musimy dodać nową właściwość w ContentView, która będzie kontrolować minimalną datę, którą chcemy pokazać. Będzie ustawiona na jedną z dwóch wartości: Date.distantPast, gdy chcemy pokazać wszystkie cele podróży, lub Date.now, gdy chcemy pokazać tylko nadchodzące cele podróży.
+
+Dodaj teraz te właściwości do ContentView:
+
+```swift
+@State private var minimumDate = Date.distantPast
+let currentDate = Date.now
+```
+
+Teraz dodaj drugi wybór do ciała widoku. Gdzie umieścisz to zależy od ciebie, ale ja osobiście lubię umieszczać go wewnątrz istniejącego przycisku menu sortowania – iOS automatycznie doda podziałkę między naszymi dwoma wyborami, co pomaga unikać zagrażania interfejsowi użytkownika.
+
+Więc umieść to poniżej istniejącego wyboru tam:
+
+```swift
+Picker("Filtruj", selection: $minimumDate) {
+    Text("Pokaż wszystkie cele podróży")
+        .tag(Date.distantPast)
+
+    Text("Pokaż nadchodzące cele podróży")
+        .tag(currentDate)
+}
+.pickerStyle(.inline)
+```
+
+Porada: Musimy przechowywać `currentDate` osobno, ponieważ będzie się ciągle zmieniać i musimy się upewnić, że jest stabilne.
+
+Teraz możemy dostosować inicjalizator DestinationListingView, aby akceptować tę minimalną datę i uwzględniać ją w naszym zapytaniu:
+
+```swift
+    init(sort: [SortDescriptor<Destination>], searchString: String, minimumDate: Date) {
+        _destinations = Query(filter: #Predicate {
+            if searchString.isEmpty {
+                return $0.date > minimumDate
+            } else {
+                return $0.name.localizedStandardContains(searchString) && $0.date > minimumDate
+            }
+        }, sort: sort)
+    }
+```
+
+Na koniec musimy zaktualizować dwa miejsca, gdzie używane jest DestinationListingView. Oznacza to aktualizację podglądu:
+
+```swift
+DestinationListingView(sort: [SortDescriptor(\Destination.name)], searchString: "", minimumDate: .distantPast)
+```
+
+Oraz aktualizację ContentView:
+
+```swift
+DestinationListingView(sort: sortOrder, searchString: searchText, minimumDate: minimumDate)
+```
+
+Gotowe!
+
+### Bonusowe wyzwanie 1: Odwrotne relacje
+
+Pierwszym dodatkowym wyzwaniem, które podejmiemy, jest dodanie odwrotnej relacji od naszego miejsca do jego celu podróży. To jest niewielka zmiana, ale jest naprawdę ważna, jak zobaczysz.
+
+Po pierwsze, ta zmiana jest naprawdę niewielka – dodaj tylko tę dodatkową właściwość do modelu Sight:
+
+```swift
+var destination: Destination?
+```
+
+I to wszystko – SwiftData może wywnioskować odwrotną relację z tego. Jeśli chcesz jawnie oznaczyć tę odwrotną relację (a szczerze mówiąc, jestem zwolennikiem jasności), powinieneś dostosować relację w pliku Destination.swift do tego:
+
+```swift
+@Relationship(deleteRule: .cascade, inverse: \Sight.destination) var sights = [Sight]()
+```
+
+Jednak ta zmiana przynosi ze sobą ważną poprawę w naszym kodzie. Pamiętasz wcześniej, jak mieliśmy problemy podczas usuwania miejsc – musieliśmy to robić bardzo precyzyjnie, aby uniknąć awarii?
+
+Wtedy problem polegał na tym, że wywołanie delete() na miejscu bez usunięcia go z tablicy miejsc celu podróży powodowało zamieszanie SwiftData, ale działo się tak, ponieważ nie było odwrotnej relacji. Dlatego, gdy wywoływaliśmy delete(), martwy obiekt nadal pozostawał w tablicy miejsc do momentu ponownego uruchomienia aplikacji.
+
+Teraz, gdy mamy odwrotną relację, ten problem znika – nasza metoda deleteSights() staje się prostsza, ponieważ możemy usunąć wywołanie destination.sights.remove():
+
+```swift
+func deleteSights(_ indexSet: IndexSet) {
+    for index in indexSet {
+        let sight = destination.sights[index]
+        modelContext.delete(sight)
+    }
+}
+```
+
+Świetnie!
+
+### Bonusowe wyzwanie 2: Sortowanie relacji w SwiftData
+
+W tym drugim wyzwaniu chcemy przedstawić każde miejsce widokowe posortowane alfabetycznie dla każdego celu podróży.
+
+SwiftData jest bezpośrednio wbudowany na Core Data, i chociaż większość złożoności Core Data jest pomijana, czasami przecieka przez to – czasami rzeczy zachowują się dziwnie, ale są wynikiem sposobu działania Core Data.
+
+Na przykład, podczas dodawania miejsca dodajemy je do tablicy miejsc celu podróży, ale kiedy te miejsca pojawiają się w naszym interfejsie użytkownika, mogą przyjść w zasadzie w dowolnej kolejności – wcale nie są dodawane na końcu!
+
+Dzieje się tak, ponieważ Core Data domyślnie używa nieuporządkowanego zestawu, więc nasze obiekty nie mają określonego porządku. Aby to naprawić, mamy dwie opcje:
+
+1. Utwórz nowe @Query w naszym widoku celu podróży, pokazujące tylko jego miejsca w alfabetycznej kolejności.
+2. Utwórz nową tablicę miejsc w sortowaną właściwość, aby obsługiwać sortowanie za nas.
+
+Pierwsza opcja może brzmieć marnotrawnie, zwłaszcza że mamy już wczytany nasz cel podróży. Niemniej jednak nie jest to takie złe, jak byś mógł myśleć: SwiftData ładuje swoje relacje leniwie (tzn tylko to co potrzebuje na widoku), więc wewnętrznie nie jest to dodatkowa praca.
+
+Jednak z tych dwóch opcji druga jest zdecydowanie łatwiejsza dla nas, więc zróbmy to teraz.
+
+Po pierwsze, dodaj tę właściwość do EditDestinationView:
+
+```swift
+var sortedSights: [Sight] {
+    destination.sights.sorted {
+        $0.name < $1.name
+    }
+}
+```
+
+Po drugie, musimy zmienić naszą pętlę ForEach dla miejsc:
+
+```swift
+ForEach(sortedSights) { sight in
+    Text(sight.name)
+}
+.onDelete(perform: deleteSights)
+```
+
+Po trzecie, i raczej ważne, musimy zmienić tę metodę deleteSights(), aby usuwała elementy poprawnie. Jeśli tego nie zrobisz, twoje elementy zostaną usunięte z oryginalnej, nieposortowanej tablicy, więc w zasadzie będzie losowe, co się stanie!
+
+Dostosuj ją tak, aby używała sortedSights zamiast destination.sights, w ten sposób:
+
+```swift
+func deleteSights(_ indexSet: IndexSet) {
+    for index in indexSet {
+        let sight = sortedSights[index]
+        modelContext.delete(sight)
+    }
+}
+```
+
+### Bonusowe wyzwanie 3: Wyszukiwanie miejsc
+
+W tym wyzwaniu rozszerzymy pasek wyszukiwania tak, aby teksty wyszukiwań użytkownika szukały jednocześnie zarówno celów podróży, jak i miejsc, dzięki czemu jeśli szukają "Watykanu", pokaże się Rzym.
+
+To jest tylko kwestia zmiany predykatu, aby uwzględniać dodatkowe wyszukiwanie, ale ważne jest, aby znaczenie było dokładnie prawidłowe: musimy zawsze uwzględniać minimalną datę, ale albo nazwa, albo nazwy miejsc muszą pasować, więc potrzebujemy wyszukiwania "lub" tam.
+
+Dostosuj swój predykat zapytania do tego:
+
+```swift
+if searchString.isEmpty {
+    return $0.date > minimumDate
+} else {
+    return ($0.name.localizedStandardContains(searchString) || $0.sights.contains {
+        $0.name.localizedStandardContains(searchString)
+    }) && $0.date > minimumDate
+}
+```
+
+Więc mamy dwie localizedStandardContains() w nawiasach, używając ||, a następnie &&, aby uwzględnić ograniczenie minimalnej daty.
+
+Wskazówka: Kolejność predykatów ma znaczenie. W tym przypadku SwiftData najpierw sprawdzi localizedStandardContains(), a następnie przeprowadzi kontrolę minimalnej daty, i bardzo prawdopodobne jest, że sprawdzanie daty będzie znacznie szybsze. Dlatego sugerowałbym, abyś dostosował swój predykat w ten sposób, aby najpierw sprawdzić datę, a następnie sprawdzić, czy ciągi nazw pasują do searchString, tak aby prosty predykat został sprawdzony szybko, a bardziej złożone sprawdzenie zostanie uruchomione tylko wtedy, gdy prostsze przejdzie.
+
+
+
+#### Bonusowe wyzwanie 4: Dodanie drugiej karty dla miejsc
+
+Naszym czwartym bonusowym wyzwaniem będzie zbudowanie drugiej karty pokazującej wszystkie miejsca w jednym miejscu. Teraz, gdy mamy odwrotną relację między miejscami a ich celami podróży, możemy nawigować do celów podróży stamtąd.
+
+Myślę, że będziesz zaskoczony, jak łatwe jest to przynajmniej do zaimplementowania podstawowej wersji.
+
+Po pierwsze, stwórz nowy widok SwiftUI o nazwie `SightsView`, zaimportuj SwiftData, a następnie dodaj tę właściwość, która czyta wszystkie miejsca w naszym systemie:
+
+```swift
+@Query(sort: \Sight.name) var sights: [Sight]
+```
+
+Następnie potrzebujemy stosu nawigacyjnego, który pokazuje listę wszystkich miejsc, a wybierając jedno z nich, powinno pokazać jego cel podróży. Możesz myśleć, że to jest skomplikowane, ponieważ uczyniliśmy cel podróży opcjonalnym, ale SwiftUI nie przejmuje się tym – po prostu sam znajduje rozwiązanie dla nas.
+
+Więc umieść to w ciele nowego widoku:
+
+```swift
+NavigationStack {
+    List(sights) { sight in
+        NavigationLink(value: sight.destination) {
+            Text(sight.name)
+        }
+    }
+    .navigationTitle("Miejsca")
+    .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
+}
+```
+
+I teraz wszystko, co pozostaje, to zaktualizowanie naszej struktury `App`, aby pokazywała widok w formie karty, tak jak poniżej:
+
+```swift
+TabView {
+    ContentView()
+        .tabItem {
+            Label("Cele podróży", systemImage: "map")
+        }
+
+    SightsView()
+        .tabItem {
+            Label("Miejsca", systemImage: "mappin.and.ellipse")
+        }
+}
+```
+
+I to wszystko, już – uwielbiam, jak łatwe to jest!
+
+Oczywiście, jeśli chciałbyś pójść dalej, mógłbyś przynieść wszystkie te same funkcje z naszego widoku listy celów podróży, w tym przeciąganie do usunięcia, wyszukiwanie, sortowanie – możesz naprawdę się rozwijać, jeśli chcesz.
+
+
+
+### Bonusowe wyzwanie 5: Dodanie obrazów
+
+Na ostatnie bonusowe wyzwanie pozwólmy użytkownikom dodawać obrazy do naszych celów podróży. To wymaga kilku drobnych zmian w naszym projekcie, więc to świetne wyzwanie na zakończenie!
+
+Po pierwsze, musimy zaktualizować nasz model celu podróży, aby miał miejsce do przechowywania danych obrazu. Domyślnie będzie to opcjonalne, ponieważ na początku nie będzie żadnego obrazu, i oznaczymy je jako zewnętrzne przechowywanie, ponieważ dane obrazu najlepiej przechowywać jako oddzielne pliki.
+
+Więc dodaj to do klasy Destination:
+
+```swift
+@Attribute(.externalStorage) var image: Data?
+```
+
+Następnie zaktualizujemy EditDestinationView, aby zawierał wybór zdjęć i pokazywał istniejące zdjęcie, jeśli zostało do tego celu podróży załączone.
+
+Zacznijmy od dodania dodatkowego importu na górze pliku:
+
+```swift
+import PhotosUI
+```
+
+Następnie dodaj nową właściwość do przechowywania wybranego obrazu:
+
+```swift
+@State private var photosItem: PhotosPickerItem?
+```
+
+Teraz możemy dodać nową sekcję na początku formularza, która pokaże obraz, jeśli istnieje, a także pokaże przycisk PhotosPicker do wyboru lub zastąpienia obrazu, jeśli to konieczne:
+
+```swift
+Section {
+    if let imageData = destination.image {
+        if let image = UIImage(data: imageData) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+        }
+    }
+
+    PhotosPicker("Załącz zdjęcie", selection: $photosItem, matching: .images)
+}
+```
+
+Na koniec musimy wykryć zmianę photosItem, abyśmy mogli spróbować załadować jego dane i przypisać je do destination.image. To jest niewielka ilość kodu, ale jest to bardzo precyzyjny kod, ponieważ musi używać oddzielnego Task do obsługi oczekiwania na przesłanie obrazu.
+
+Dodaj ten modyfikator poniżej navigationBarTitleDisplayMode():
+
+```swift
+.onChange(of: photosItem) {
+    Task {
+        destination.image = try? await photosItem?.loadTransferable(type: Data.self)
+    }
+}
+```
+
+I to wszystko! Teraz możesz dodać obrazy do dowolnego celu podróży, a będą one automatycznie zapisywane jako oddzielne pliki.
