@@ -17,11 +17,20 @@ struct DestinationListingView: View {
         List {
             ForEach(destinations) { destination in
                 NavigationLink(value: destination)  {
-                    VStack(alignment: .leading) {
-                        Text(destination.name)
-                            .font(.headline)
+                    HStack {
+                        if let photo = destination.image, let image = UIImage(data: photo) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .clipShape(.rect(cornerRadius: 5))
+                                .frame(height: 100)
+                        }
+                        VStack(alignment: .leading) {
+                            Text(destination.name)
+                                .font(.headline)
 
-                        Text(destination.date.formatted(date: .long, time: .shortened))
+                            Text(destination.date.formatted(date: .long, time: .shortened))
+                        }
                     }
                 }
             }
@@ -35,8 +44,9 @@ struct DestinationListingView: View {
                 return $0.date > minimumDate
             } else {
                 return ($0.name.localizedStandardContains(searchString)
-                || $0.sights.contains
-                     { $0.name.localizedStandardContains(searchString) })
+                        || $0.details.localizedStandardContains(searchString)
+                        || $0.sights.contains
+                        { $0.name.localizedStandardContains(searchString) })
                 && $0.date > minimumDate
             }
         }, sort: sort)

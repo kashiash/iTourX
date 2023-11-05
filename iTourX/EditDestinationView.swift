@@ -7,12 +7,15 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct EditDestinationView: View {
 
     @Bindable var destination: Destination
     @State private var newSightName = ""
     @Environment(\.modelContext) private var modelContext
+
+    @State private var photosItem : PhotosPickerItem?
 
     var sortedSights: [Sight] {
         destination.sights.sorted {
@@ -22,6 +25,18 @@ struct EditDestinationView: View {
 
     var body: some View {
         Form {
+            Section
+            {
+                if let imagedata = destination.image
+                {
+                    if let image = UIImage(data: imagedata) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                    }
+                }
+                PhotosPicker("Attach photo", selection: $photosItem, matching: .images)
+            }
             TextField("Name", text: $destination.name)
             TextField("Details", text: $destination.details, axis: .vertical)
             DatePicker("Date", selection: $destination.date)
@@ -49,6 +64,11 @@ struct EditDestinationView: View {
         }
         .navigationTitle("Edit Destination")
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: photosItem) {
+            Task {
+                destination.image = try? await photosItem?.loadTransferable(type: Data.self)
+            }
+        }
     }
     func addSight() {
         guard newSightName.isEmpty == false else { return }

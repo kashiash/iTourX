@@ -1039,3 +1039,41 @@ Dodaj ten modyfikator poniżej navigationBarTitleDisplayMode():
 ```
 
 I to wszystko! Teraz możesz dodać obrazy do dowolnego celu podróży, a będą one automatycznie zapisywane jako oddzielne pliki.
+
+Aby pokazac je na liscie trzeba dodac podobny kod - obecna zawartosc opakowac w HStack:
+
+```swift
+var body: some View {
+  List {
+    ForEach(destinations) { destination in
+                           NavigationLink(value: destination)  {
+                             HStack {
+                               if let photo = destination.image, let image = UIImage(data: photo) {
+                                 Image(uiImage: image)
+                                 .resizable()
+                                 .scaledToFit()
+                                 .clipShape(.rect(cornerRadius: 5))
+                                 .frame(height: 100)
+                               }
+                               VStack(alignment: .leading) {
+                                 Text(destination.name)
+                                 .font(.headline)
+                                 Text(destination.date.formatted(date: .long, time: .shortened))
+                               }
+                             }
+```
+
+
+
+a najlepiej calosc wyswietlana jako pojedynczy rekord na liscie przeniesc do osobnego widoku.
+
+
+
+## do zrobienia
+
+edycja Sights
+
+- zdjecia
+- lokalizacja na mapie
+- dokładniejszy opis
+- wyszukiwanie na liscie Sights
