@@ -50,10 +50,19 @@ struct EditDestinationView: View {
                 .pickerStyle(.segmented)
             }
             Section("Sights") {
-                ForEach(sortedSights) { sight in
-                    Text(sight.name)
+                NavigationStack
+                {
+                    List{
+                        ForEach(sortedSights) { sight in
+//                            NavigationLink{
+//                                EditSightView(sight: sight)
+//                            } label: {
+                                Text(sight.name)
+                           // }
+                        }
+                        .onDelete(perform: deleteSights)
+                    }
                 }
-                .onDelete(perform: deleteSights)
 
                 HStack {
                     TextField("Add a new sight in \(destination.name)", text: $newSightName)

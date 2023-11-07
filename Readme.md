@@ -1063,11 +1063,7 @@ var body: some View {
                              }
 ```
 
-
-
 a najlepiej calosc wyswietlana jako pojedynczy rekord na liscie przeniesc do osobnego widoku.
-
-
 
 ## do zrobienia
 

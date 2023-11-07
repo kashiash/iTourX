@@ -21,12 +21,12 @@ struct SightsView: View
 
                 ForEach(sights)
                 { sight in
-                    NavigationLink(value: sight.destination)
-                    {
+                    NavigationLink(value: sight.destination) {
                         Text(sight.name)
                         if let destination = sight.destination {
                             Text(destination.name)
-                        }}
+                        }
+                    }
                 }
                 .onDelete(perform: { indexSet in
                     for index in indexSet {
@@ -37,7 +37,7 @@ struct SightsView: View
             }
             .navigationTitle("Sights")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
+           .navigationDestination(for: Destination.self, destination: EditDestinationView.init)
 
         }
     }

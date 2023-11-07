@@ -15,6 +15,7 @@
 		760E60012ACD4B2800924BFF /* EditDestinationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760E60002ACD4B2800924BFF /* EditDestinationView.swift */; };
 		760E60032ACD5ADD00924BFF /* DestinationListingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760E60022ACD5ADD00924BFF /* DestinationListingView.swift */; };
 		760E60052ACD951400924BFF /* Sight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760E60042ACD951400924BFF /* Sight.swift */; };
+		76B1502D2AFA10A6007C7436 /* EditSightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B1502C2AFA10A6007C7436 /* EditSightView.swift */; };
 		76D446002AF7B9DD00C640CB /* SightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76D445FF2AF7B9DD00C640CB /* SightsView.swift */; };
 /* End PBXBuildFile section */
 
@@ -29,6 +30,7 @@
 		760E60002ACD4B2800924BFF /* EditDestinationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditDestinationView.swift; sourceTree = "<group>"; };
 		760E60022ACD5ADD00924BFF /* DestinationListingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestinationListingView.swift; sourceTree = "<group>"; };
 		760E60042ACD951400924BFF /* Sight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sight.swift; sourceTree = "<group>"; };
+		76B1502C2AFA10A6007C7436 /* EditSightView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditSightView.swift; sourceTree = "<group>"; };
 		76D445FF2AF7B9DD00C640CB /* SightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SightsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -67,6 +69,7 @@
 				760E60022ACD5ADD00924BFF /* DestinationListingView.swift */,
 				76D445FF2AF7B9DD00C640CB /* SightsView.swift */,
 				760E60002ACD4B2800924BFF /* EditDestinationView.swift */,
+				76B1502C2AFA10A6007C7436 /* EditSightView.swift */,
 				760E5FF32ACC64CA00924BFF /* Assets.xcassets */,
 				760E5FF52ACC64CA00924BFF /* iTourX.entitlements */,
 				760E5FF62ACC64CA00924BFF /* Preview Content */,
@@ -160,6 +163,7 @@
 				760E5FFF2ACC64DA00924BFF /* Destination.swift in Sources */,
 				760E60052ACD951400924BFF /* Sight.swift in Sources */,
 				760E60012ACD4B2800924BFF /* EditDestinationView.swift in Sources */,
+				76B1502D2AFA10A6007C7436 /* EditSightView.swift in Sources */,
 				760E60032ACD5ADD00924BFF /* DestinationListingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
