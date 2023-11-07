@@ -12,8 +12,7 @@ import SwiftData
 class Sight {
     var name: String
     var destination: Destination?
-    @Attribute(.externalStorage)
-    var image: Data?
+
 
     init(name: String) {
         self.name = name
